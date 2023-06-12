@@ -1,12 +1,11 @@
 package me.jakejmattson.airshare
 
 import io.javalin.Javalin
-import io.javalin.http.HttpStatus
-import java.awt.SystemTray
-import java.awt.Toolkit
-import java.awt.TrayIcon
-import java.awt.datatransfer.StringSelection
-import java.net.InetAddress
+import io.javalin.util.FileUtil
+import me.jakejmattson.airshare.managers.ClipboardManager
+import me.jakejmattson.airshare.managers.TrayManager
+import org.eclipse.jetty.http.HttpStatus
+import java.io.InputStream
 
 fun main(vararg args: String) {
     val port = args
@@ -14,19 +13,31 @@ fun main(vararg args: String) {
         ?.toIntOrNull()
         ?: 6583
 
-    val image = Toolkit.getDefaultToolkit().createImage(Javalin::class.java.getResource("/airshare.png"))
-    val tooltip = "AirShare Client\n${InetAddress.getLocalHost().hostAddress}:$port"
-    val trayIcon = TrayIcon(image, tooltip).apply { isImageAutoSize = true }
-
-    SystemTray.getSystemTray().add(trayIcon)
+    val tray = TrayManager(port)
+    val clipboard = ClipboardManager()
 
     Javalin.create()
         .post("/") {
-            val input = with(it.body()) { substring(indexOf(":") + 2, length - 2) }
+            val type = it.contentType()!!
+            println("Received $type from ${it.ip()}")
 
-            Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(input), null)
-            trayIcon.displayMessage(null, input, TrayIcon.MessageType.INFO)
-            it.status(HttpStatus.OK)
+            when {
+                type.startsWith("image") -> {
+                    clipboard.saveImage(it.bodyInputStream())
+                    tray.notify("Image saved to clipboard")
+                }
+
+                type.endsWith("json") -> {
+                    val input = with(it.body()) { substring(indexOf(":") + 2, length - 2) }
+                    clipboard.saveText(input)
+                    tray.notify(input)
+                }
+
+                else -> {
+                    tray.notify("Invalid POST")
+                    it.status(HttpStatus.BAD_REQUEST_400)
+                }
+            }
         }
         .start(port)
 }
