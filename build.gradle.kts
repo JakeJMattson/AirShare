@@ -4,7 +4,7 @@ version = "1.0.0"
 plugins {
     kotlin("jvm") version "1.8.21"
     id("com.github.johnrengelman.shadow") version "8.1.1"
-    id("com.github.ben-manes.versions") version "0.46.0"
+    id("com.github.ben-manes.versions") version "0.47.0"
 }
 
 repositories {
@@ -12,8 +12,8 @@ repositories {
 }
 
 dependencies {
-    implementation("io.javalin:javalin:5.4.2")
-    implementation("org.slf4j:slf4j-nop:2.0.6")
+    implementation("io.javalin:javalin:5.6.0")
+    implementation("org.slf4j:slf4j-nop:2.0.7")
 }
 
 tasks {
